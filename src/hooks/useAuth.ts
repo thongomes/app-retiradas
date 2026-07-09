@@ -38,18 +38,17 @@ export function useAuth() {
     return !!user;
   }, [user]);
 
-  const loginWithGoogle = async () => {
-    try {
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      if (isMobile) {
-        await signInWithRedirect(auth, googleProvider);
-      } else {
-        await signInWithPopup(auth, googleProvider);
-      }
-    } catch (error) {
-      console.error('Erro no login com Google:', error);
-      throw error;
-    }
+  const loginWithGoogle = () => {
+    // Call signInWithPopup synchronously to prevent mobile popup blocking.
+    // If it is blocked by browser rules, fallback to redirect.
+    signInWithPopup(auth, googleProvider)
+      .catch((error: any) => {
+        if (error?.code === 'auth/popup-blocked') {
+          signInWithRedirect(auth, googleProvider);
+        } else {
+          console.error('Erro no login com Google:', error);
+        }
+      });
   };
 
   const logout = async () => {
