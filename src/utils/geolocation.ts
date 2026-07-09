@@ -14,17 +14,39 @@ export function getCurrentCoordinates(): Promise<Coordinates> {
       reject(new Error('Geolocalização não é suportada por este navegador.'));
       return;
     }
+
+    // Safety timeout of 6 seconds: if browser hangs (common in iOS), reject the promise.
+    const safetyTimeout = setTimeout(() => {
+      reject(new Error('Timeout de segurança da Geolocalização (6s).'));
+    }, 6000);
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        clearTimeout(safetyTimeout);
         resolve({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         });
       },
-      (error) => {
-        reject(error);
+      () => {
+        clearTimeout(safetyTimeout);
+        // Fallback: If it failed, try once more with enableHighAccuracy: false
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            resolve({
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+            });
+          },
+          (err) => {
+            reject(err);
+          },
+          { enableHighAccuracy: false, timeout: 4000 }
+        );
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      // Using enableHighAccuracy: false by default since technicians work indoors,
+      // where satellite GPS often fails/times out, and network location is instant.
+      { enableHighAccuracy: false, timeout: 4000 }
     );
   });
 }

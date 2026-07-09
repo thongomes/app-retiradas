@@ -32,6 +32,11 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
 
+  const isAdmin = useMemo(() => {
+    if (!user) return false;
+    return user.email === 'enito@newlife.com.br' || user.email === 'admin@newlife.com.br' || user.email === 'enito.vgs@gmail.com';
+  }, [user]);
+
   // Firestore Snapshot Subscription
   useEffect(() => {
     if (!user || !hasAccess) {
@@ -44,7 +49,7 @@ export default function App() {
     const collRef = collection(db, ...COLLECTION_PATH_RETIRADAS);
     
     // If user is not admin, filter to only their records
-    const q = hasAccess && (user.email === 'enito@newlife.com.br' || user.email === 'admin@newlife.com.br' || user.email === 'enito.vgs@gmail.com')
+    const q = isAdmin
       ? collRef
       : query(collRef, where('createdBy', '==', user.uid));
 
@@ -351,7 +356,7 @@ export default function App() {
 
         {/* Dashboard statistics panel */}
         <div className="mb-6">
-          <DashboardStats stats={stats} />
+          <DashboardStats stats={stats} isAdmin={isAdmin} />
         </div>
 
         {/* Split grid: Form on the left/top, List on the right/bottom */}
@@ -369,7 +374,7 @@ export default function App() {
             <WithdrawalList
               withdrawals={withdrawals}
               currentUserUid={user.uid}
-              isAdmin={user.email === 'enito@newlife.com.br' || user.email === 'admin@newlife.com.br' || user.email === 'enito.vgs@gmail.com'}
+              isAdmin={isAdmin}
               onStatusUpdate={handleStatusUpdate}
               onDelete={handleDelete}
             />
