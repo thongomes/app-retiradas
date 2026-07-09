@@ -248,16 +248,11 @@ export default function App() {
         <div className="bg-brand-card p-8 rounded-2xl border border-brand-border shadow-2xl max-w-sm w-full text-center space-y-6">
           
           <div className="flex flex-col items-center">
-            <img src="/logo.png" alt="New Life" className="h-16 w-auto mb-3" />
-            <h2 className="text-3xl font-extrabold italic text-white tracking-wide">new life</h2>
-            <p className="text-xs text-brand-secondary italic mt-1">a sua nova internet</p>
+            <img src="/logo.png" alt="New Life" className="h-20 w-auto" />
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-white">Controle de Retiradas</h3>
-            <p className="text-xs text-brand-secondary leading-relaxed">
-              Faça login utilizando a sua conta Google para acessar o painel de retiradas de equipamentos.
-            </p>
+          <div className="space-y-1">
+            <h3 className="text-xl font-bold text-white tracking-wide">Controle de Retiradas</h3>
           </div>
 
           <button
