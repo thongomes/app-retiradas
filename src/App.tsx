@@ -256,7 +256,7 @@ export default function App() {
           <div className="space-y-4">
             <h3 className="text-lg font-bold text-white">Controle de Retiradas</h3>
             <p className="text-xs text-brand-secondary leading-relaxed">
-              Faça login utilizando a sua conta Google corporativa da New Life para acessar o painel de retiradas de equipamentos.
+              Faça login utilizando a sua conta Google para acessar o painel de retiradas de equipamentos.
             </p>
           </div>
 

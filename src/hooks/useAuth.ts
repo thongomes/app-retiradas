@@ -9,12 +9,6 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 
-const ALLOWED_EMAILS = [
-  'enito@newlife.com.br',
-  'admin@newlife.com.br',
-  'enito.vgs@gmail.com'
-];
-
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,9 +35,7 @@ export function useAuth() {
   }, []);
 
   const hasAccess = useMemo(() => {
-    if (!user) return false;
-    const email = user.email || '';
-    return ALLOWED_EMAILS.includes(email) || email.endsWith('@newlife.com.br');
+    return !!user;
   }, [user]);
 
   const loginWithGoogle = async () => {
