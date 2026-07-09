@@ -24,6 +24,10 @@ import { Header } from './components/Header';
 import { DashboardStats } from './components/DashboardStats';
 import { WithdrawalForm } from './components/WithdrawalForm';
 import { WithdrawalList } from './components/WithdrawalList';
+// Admin emails parsed from env or defaulted
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || 'enito@newlife.com.br,admin@newlife.com.br,enito.vgs@gmail.com')
+  .split(',')
+  .map((e: string) => e.trim().toLowerCase());
 
 export default function App() {
   const { user, loading, hasAccess, loginWithGoogle, logout } = useAuth();
@@ -33,8 +37,8 @@ export default function App() {
   const [exportingPDF, setExportingPDF] = useState(false);
 
   const isAdmin = useMemo(() => {
-    if (!user) return false;
-    return user.email === 'enito@newlife.com.br' || user.email === 'admin@newlife.com.br' || user.email === 'enito.vgs@gmail.com';
+    if (!user || !user.email) return false;
+    return ADMIN_EMAILS.includes(user.email.toLowerCase());
   }, [user]);
 
   // Firestore Snapshot Subscription
@@ -199,9 +203,8 @@ export default function App() {
     
     // Check permission (admins can delete any, technicians can only delete their own)
     const isOwner = createdBy === user.uid;
-    const isSpecialAdmin = user.email === 'enito@newlife.com.br' || user.email === 'admin@newlife.com.br' || user.email === 'enito.vgs@gmail.com';
     
-    if (!isOwner && !isSpecialAdmin) {
+    if (!isOwner && !isAdmin) {
       alert('Você não tem permissão para excluir este registro.');
       return;
     }
