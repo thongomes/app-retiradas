@@ -53,14 +53,19 @@ export const WithdrawalList: React.FC<WithdrawalListProps> = ({
         const matchAddr = w.address?.toLowerCase().includes(term);
         const matchNotes = w.notes?.toLowerCase().includes(term);
         
-        let matchSerial = false;
+        let matchSerialOrMac = false;
         if (w.serials) {
-          matchSerial = Object.values(w.serials).some((list) =>
+          matchSerialOrMac = Object.values(w.serials).some((list) =>
             list.some((sn) => sn.toLowerCase().includes(term))
           );
         }
+        if (!matchSerialOrMac && w.macs) {
+          matchSerialOrMac = Object.values(w.macs).some((list) =>
+            list.some((mac) => mac.toLowerCase().includes(term))
+          );
+        }
 
-        if (!matchClient && !matchTech && !matchAddr && !matchNotes && !matchSerial) {
+        if (!matchClient && !matchTech && !matchAddr && !matchNotes && !matchSerialOrMac) {
           return false;
         }
       }
@@ -276,13 +281,17 @@ export const WithdrawalList: React.FC<WithdrawalListProps> = ({
                     <div className="space-y-1">
                       <p className="text-brand-secondary font-bold text-xs uppercase tracking-wider">Cliente / Endereço</p>
                       <p className="text-white font-semibold">{w.client}</p>
-                      <button 
-                        onClick={() => openGoogleMaps(w.address)}
-                        className="text-xs text-brand-accent hover:underline flex items-center gap-1 group text-left cursor-pointer"
-                      >
-                        <span className="truncate max-w-[240px]">{w.address}</span>
-                        <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                      </button>
+                      {w.address ? (
+                        <button 
+                          onClick={() => openGoogleMaps(w.address!)}
+                          className="text-xs text-brand-accent hover:underline flex items-center gap-1 group text-left cursor-pointer"
+                        >
+                          <span className="truncate max-w-[240px]">{w.address}</span>
+                          <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                        </button>
+                      ) : (
+                        <span className="text-xs text-brand-secondary italic">Endereço não informado</span>
+                      )}
                     </div>
 
                     {/* Materials & Serials */}
@@ -291,12 +300,18 @@ export const WithdrawalList: React.FC<WithdrawalListProps> = ({
                       <div className="text-xs space-y-1 text-white font-medium">
                         {w.materials && Object.entries(w.materials).map(([key, count]) => {
                           const snList = w.serials && w.serials[key] ? w.serials[key].filter(Boolean) : [];
+                          const macList = w.macs && w.macs[key] ? w.macs[key].filter(Boolean) : [];
                           return (
                             <div key={key} className="bg-brand-bg/40 p-1.5 rounded border border-brand-border/40">
                               <p className="font-semibold text-brand-accent">{count}x {key}</p>
                               {snList.length > 0 && (
                                 <p className="text-[10px] text-brand-secondary">
                                   S/N: {snList.join(', ')}
+                                </p>
+                              )}
+                              {macList.length > 0 && (
+                                <p className="text-[10px] text-brand-secondary mt-0.5">
+                                  MAC: {macList.join(', ')}
                                 </p>
                               )}
                             </div>

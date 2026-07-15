@@ -13,11 +13,12 @@ export interface Withdrawal {
   date: string;
   technician: string;
   client: string;
-  address: string;
+  address?: string;
   type: string;
   notes: string;
   materials: Partial<MaterialsCount>;
   serials: Record<string, string[]>;
+  macs?: Record<string, string[]>;
   photoUrl: string | null;
   status: 'Pendente' | 'Avariado' | 'Recebido';
   createdAt: number;

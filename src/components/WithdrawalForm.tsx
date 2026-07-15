@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  MapPin, 
   Calendar, 
   User, 
   FileText, 
   Plus, 
   Minus, 
   Camera, 
-  Loader2 
+  Loader2,
+  Mic
 } from 'lucide-react';
 import { MaterialsCount, Withdrawal } from '../types';
 import { getCurrentCoordinates, reverseGeocode } from '../utils/geolocation';
+import { AudioRegisterModal } from './AudioRegisterModal';
 
 interface WithdrawalFormProps {
   initialTechnician: string;
@@ -61,6 +62,8 @@ export const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
   // Materials & Serials
   const [materials, setMaterials] = useState<MaterialsCount>(DEFAULT_MATERIALS);
   const [serials, setSerials] = useState<Record<string, string[]>>({});
+  const [macs, setMacs] = useState<Record<string, string[]>>({});
+  const [audioModalOpen, setAudioModalOpen] = useState(false);
   
   // Custom Types list
   const [customTypes, setCustomTypes] = useState<string[]>(() => {
@@ -100,17 +103,42 @@ export const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
     });
   };
 
+  // Adjust macs array size based on materials count change
+  const adjustMacsCount = (key: keyof MaterialsCount, count: number) => {
+    setMacs((prev) => {
+      const prevList = prev[key] || [];
+      let newList = [...prevList];
+      if (count > prevList.length) {
+        while (newList.length < count) {
+          newList.push('');
+        }
+      } else if (count < prevList.length) {
+        newList = newList.slice(0, count);
+      }
+      return { ...prev, [key]: newList };
+    });
+  };
+
   const handleMaterialChange = (key: keyof MaterialsCount, delta: number) => {
     setMaterials((prev) => {
       const current = prev[key];
       const newVal = Math.max(0, current + delta);
       adjustSerialsCount(key, newVal);
+      adjustMacsCount(key, newVal);
       return { ...prev, [key]: newVal };
     });
   };
 
   const handleSerialChange = (key: keyof MaterialsCount, index: number, val: string) => {
     setSerials((prev) => {
+      const newList = [...(prev[key] || [])];
+      newList[index] = val;
+      return { ...prev, [key]: newList };
+    });
+  };
+
+  const handleMacChange = (key: keyof MaterialsCount, index: number, val: string) => {
+    setMacs((prev) => {
       const newList = [...(prev[key] || [])];
       newList[index] = val;
       return { ...prev, [key]: newList };
@@ -237,15 +265,22 @@ export const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
       // Filter out materials with 0 count
       const activeMaterials: Partial<MaterialsCount> = {};
       const activeSerials: Record<string, string[]> = {};
+      const activeMacs: Record<string, string[]> = {};
 
       Object.entries(materials).forEach(([key, count]) => {
         if (count > 0) {
           activeMaterials[key as keyof MaterialsCount] = count;
           
           const serialsList = serials[key] || [];
-          const sanitized = serialsList.map((sn) => sn.replace(/[<>"'&]/g, '').trim());
-          if (sanitized.some(Boolean)) {
-            activeSerials[key] = sanitized;
+          const sanitizedS = serialsList.map((sn) => sn.replace(/[<>"'&]/g, '').trim());
+          if (sanitizedS.some(Boolean)) {
+            activeSerials[key] = sanitizedS;
+          }
+
+          const macsList = macs[key] || [];
+          const sanitizedM = macsList.map((m) => m.replace(/[<>"'&]/g, '').trim());
+          if (sanitizedM.some(Boolean)) {
+            activeMacs[key] = sanitizedM;
           }
         }
       });
@@ -258,6 +293,7 @@ export const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
         type: resolvedType,
         materials: activeMaterials,
         serials: activeSerials,
+        macs: activeMacs,
         photoUrl,
         notes: notes.trim()
       });
@@ -270,6 +306,7 @@ export const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
       setNotes('');
       setMaterials(DEFAULT_MATERIALS);
       setSerials({});
+      setMacs({});
       setPhotoUrl(null);
     } catch (error) {
       console.error(error);
@@ -280,9 +317,19 @@ export const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
 
   return (
     <div className="bg-brand-card rounded-xl shadow-lg border border-brand-border overflow-hidden sticky top-24">
-      <div className="bg-[#07303d] border-b border-brand-border px-5 py-4 flex items-center gap-2">
-        <FileText className="w-5 h-5 text-brand-accent" />
-        <h2 className="font-semibold text-white">Registrar Recolhimento</h2>
+      <div className="bg-[#07303d] border-b border-brand-border px-5 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FileText className="w-5 h-5 text-brand-accent" />
+          <h2 className="font-semibold text-white">Registrar Recolhimento</h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => setAudioModalOpen(true)}
+          className="flex items-center gap-1.5 bg-[#0bd6a8]/10 hover:bg-[#0bd6a8]/25 text-[#0bd6a8] border border-[#0bd6a8]/30 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
+        >
+          <Mic className="w-3.5 h-3.5 animate-pulse text-brand-accent" />
+          <span>Áudio</span>
+        </button>
       </div>
 
       <form onSubmit={handleFormSubmit} className="p-5 space-y-4">
@@ -348,24 +395,7 @@ export const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
           </div>
         </div>
 
-        {/* Address Input */}
-        <div>
-          <label className="block text-sm font-medium text-brand-secondary mb-1">Endereço</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MapPin className="w-4 h-4 text-brand-secondary" />
-            </div>
-            <input 
-              type="text" 
-              placeholder="Rua, N°, Bairro"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              required
-              maxLength={250}
-              className="pl-10 w-full rounded-lg bg-brand-input border border-brand-border text-white placeholder-[#456b78] px-3 py-2 focus:ring-1 focus:ring-brand-accent focus:border-brand-accent outline-none transition-all"
-            />
-          </div>
-        </div>
+        {/* Endereço removido da interface a pedido do usuário, mas mantido em estado para carimbos de fotos */}
 
         {/* Type Select */}
         <div>
@@ -431,22 +461,36 @@ export const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
                     </div>
                   </div>
 
-                  {/* Serial input rendering (only if count > 0 and not Conectores) */}
+                  {/* Serial and MAC inputs rendering (only if count > 0 and not Conectores) */}
                   {isSelected && key !== 'Conectores' && (
-                    <div className="pl-4 border-l-2 border-[#125366] space-y-2 animate-in fade-in duration-300">
+                    <div className="pl-4 border-l-2 border-[#125366] space-y-3 animate-in fade-in duration-300">
                       <p className="text-[11px] text-brand-accent font-semibold tracking-wider uppercase">
-                        S/N (Números de Série)
+                        S/N e Endereço MAC
                       </p>
                       {Array.from({ length: count }).map((_, index) => (
-                        <input
-                          key={`${key}-sn-${index}`}
-                          type="text"
-                          placeholder={`Número de Série ${index + 1}`}
-                          value={(serials[key] && serials[key][index]) || ''}
-                          onChange={(e) => handleSerialChange(key, index, e.target.value)}
-                          maxLength={100}
-                          className="w-full text-xs rounded-lg bg-brand-input border border-brand-border text-white placeholder-[#456b78] px-3 py-1.5 focus:ring-1 focus:ring-brand-accent outline-none"
-                        />
+                        <div key={`${key}-fields-${index}`} className="space-y-1.5 border-b border-brand-border/20 pb-2 last:border-0 last:pb-0">
+                          <span className="text-[10px] text-brand-secondary font-medium block">
+                            Equipamento #{index + 1}
+                          </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              placeholder="Nº de Série (S/N)"
+                              value={(serials[key] && serials[key][index]) || ''}
+                              onChange={(e) => handleSerialChange(key, index, e.target.value)}
+                              maxLength={100}
+                              className="w-full text-xs rounded-lg bg-brand-input border border-brand-border text-white placeholder-[#456b78] px-3 py-1.5 focus:ring-1 focus:ring-brand-accent outline-none"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Endereço MAC"
+                              value={(macs[key] && macs[key][index]) || ''}
+                              onChange={(e) => handleMacChange(key, index, e.target.value)}
+                              maxLength={100}
+                              className="w-full text-xs rounded-lg bg-brand-input border border-brand-border text-white placeholder-[#456b78] px-3 py-1.5 focus:ring-1 focus:ring-brand-accent outline-none"
+                            />
+                          </div>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -471,7 +515,7 @@ export const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
 
         {/* Photo watermark loader & camera input */}
         <div className="mt-4">
-          <label className="block text-sm font-medium text-brand-secondary mb-2">Comprovante de Foto (Obrigatório)</label>
+          <label className="block text-sm font-medium text-brand-secondary mb-2">Comprovante de Foto (Opcional)</label>
           <div className="flex flex-col items-center gap-3">
             <label className="w-full flex flex-col items-center justify-center bg-brand-input border border-brand-border border-dashed hover:border-brand-border-hover rounded-xl p-4 cursor-pointer hover:bg-brand-card/40 transition-all text-center">
               {loadingGeo ? (
@@ -517,7 +561,7 @@ export const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
         {/* Submit button */}
         <button
           type="submit"
-          disabled={submitting || loadingGeo || !photoUrl}
+          disabled={submitting || loadingGeo}
           className="w-full flex items-center justify-center gap-2 bg-[#0bd6a8] hover:bg-[#09c096] text-[#04242e] font-bold py-3 px-4 rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none cursor-pointer mt-6"
         >
           {submitting ? (
@@ -531,6 +575,38 @@ export const WithdrawalForm: React.FC<WithdrawalFormProps> = ({
         </button>
 
       </form>
+
+      <AudioRegisterModal
+        isOpen={audioModalOpen}
+        onClose={() => setAudioModalOpen(false)}
+        onApplyData={(data) => {
+          if (data.client) setClient(data.client);
+          if (data.type) {
+            if (allTypes.includes(data.type)) {
+              setType(data.type);
+            } else {
+              setType('Outro (Adicionar Novo)');
+              setNewType(data.type);
+            }
+          }
+          if (data.notes) setNotes(data.notes);
+          if (data.materials) {
+            const updatedMaterials = { ...DEFAULT_MATERIALS, ...data.materials };
+            setMaterials(updatedMaterials);
+            Object.entries(updatedMaterials).forEach(([k, val]) => {
+              adjustSerialsCount(k as keyof MaterialsCount, val);
+              adjustMacsCount(k as keyof MaterialsCount, val);
+            });
+          }
+          if (data.serials) {
+            setSerials((prev) => ({ ...prev, ...data.serials }));
+          }
+          if (data.macs) {
+            setMacs((prev) => ({ ...prev, ...data.macs }));
+          }
+          setAudioModalOpen(false);
+        }}
+      />
     </div>
   );
 };

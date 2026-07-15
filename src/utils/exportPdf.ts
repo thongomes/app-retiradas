@@ -59,14 +59,25 @@ export function exportToPDF(withdrawals: Withdrawal[], stats: GeneralStats): voi
             const serialsList = w.serials && w.serials[key]
               ? w.serials[key].filter(Boolean)
               : [];
-            return `${count}x ${key}${
-              serialsList.length > 0 ? `\n(S/N: ${serialsList.join(', ')})` : ''
-            }`;
+            const macsList = w.macs && w.macs[key]
+              ? w.macs[key].filter(Boolean)
+              : [];
+            
+            let extra = '';
+            if (serialsList.length > 0 && macsList.length > 0) {
+              extra = `\n(S/N: ${serialsList.join(', ')}\nMAC: ${macsList.join(', ')})`;
+            } else if (serialsList.length > 0) {
+              extra = `\n(S/N: ${serialsList.join(', ')})`;
+            } else if (macsList.length > 0) {
+              extra = `\n(MAC: ${macsList.join(', ')})`;
+            }
+
+            return `${count}x ${key}${extra}`;
           })
           .join('\n');
       }
 
-      const clientInfo = `${w.client}\nEnd: ${w.address}`;
+      const clientInfo = w.address ? `${w.client}\nEnd: ${w.address}` : w.client;
       const typeInfo = `${w.type}\nStatus: ${w.status || 'Pendente'}`;
 
       return [

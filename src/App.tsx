@@ -365,15 +365,17 @@ export default function App() {
         {/* Split grid: Form on the left/top, List on the right/bottom */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          <div className="lg:col-span-1">
-            <WithdrawalForm 
-              initialTechnician={user.displayName || ''}
-              techniciansList={uniqueTechnicians}
-              onSubmit={handleFormSubmit}
-            />
-          </div>
+          {!isAdmin && (
+            <div className="lg:col-span-1">
+              <WithdrawalForm 
+                initialTechnician={user.displayName || ''}
+                techniciansList={uniqueTechnicians}
+                onSubmit={handleFormSubmit}
+              />
+            </div>
+          )}
 
-          <div className="lg:col-span-2">
+          <div className={isAdmin ? "lg:col-span-3" : "lg:col-span-2"}>
             <WithdrawalList
               withdrawals={withdrawals}
               currentUserUid={user.uid}

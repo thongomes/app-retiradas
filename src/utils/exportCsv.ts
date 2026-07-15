@@ -18,6 +18,7 @@ export function exportToCSV(withdrawals: Withdrawal[]): void {
       'Tipo de Retirada',
       'Materiais',
       'Seriais',
+      'MACs',
       'Status',
       'Observações'
     ];
@@ -25,6 +26,7 @@ export function exportToCSV(withdrawals: Withdrawal[]): void {
     const rows = withdrawals.map((w) => {
       let materialsStr = 'Nenhum';
       let serialsStr = '';
+      let macsStr = '';
 
       if (w.materials) {
         materialsStr = Object.entries(w.materials)
@@ -42,6 +44,18 @@ export function exportToCSV(withdrawals: Withdrawal[]): void {
           })
           .filter(Boolean)
           .join(' | ');
+
+        macsStr = Object.entries(w.materials)
+          .map(([key, _]) => {
+            const macsList = w.macs && w.macs[key] 
+              ? w.macs[key].filter(Boolean) 
+              : [];
+            return macsList.length > 0 
+              ? `${key}: [${macsList.join(', ')}]` 
+              : '';
+          })
+          .filter(Boolean)
+          .join(' | ');
       }
 
       return [
@@ -52,6 +66,7 @@ export function exportToCSV(withdrawals: Withdrawal[]): void {
         w.type || '',
         materialsStr,
         serialsStr,
+        macsStr,
         w.status || 'Pendente',
         (w.notes || '').replace(/\n/g, ' ')
       ];
