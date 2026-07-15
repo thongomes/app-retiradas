@@ -34,19 +34,40 @@ export function useAuth() {
     return () => unsubscribe();
   }, []);
 
+  const isIOS = useMemo(() => {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  }, []);
+
+  const isInAppBrowser = useMemo(() => {
+    const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+    return (
+      ua.indexOf('FBAN') > -1 ||
+      ua.indexOf('FBAV') > -1 ||
+      ua.indexOf('Instagram') > -1 ||
+      ua.indexOf('WhatsApp') > -1 ||
+      ua.indexOf('GSA') > -1 || // Google Search App on iOS
+      ua.indexOf('Messenger') > -1
+    );
+  }, []);
+
   const hasAccess = useMemo(() => {
     return !!user;
   }, [user]);
 
   const loginWithGoogle = () => {
-    // Call signInWithPopup synchronously to prevent mobile popup blocking.
-    // If it is blocked by browser rules, fallback to redirect.
     signInWithPopup(auth, googleProvider)
       .catch((error: any) => {
+        console.error('Erro no login com Google:', error);
         if (error?.code === 'auth/popup-blocked') {
+          if (isIOS) {
+            alert('Atenção: O navegador bloqueou o pop-up de login do Google. Para entrar no iPhone:\n\n1. Clique em "Permitir" quando solicitado na tela.\n2. Se estiver dentro do WhatsApp, clique no ícone da bússola ou menu (três pontos) e escolha "Abrir no Safari".\n3. Ou vá em Ajustes do seu iPhone -> Safari (ou Chrome) e desative a opção "Bloquear Pop-ups".');
+          } else {
+            signInWithRedirect(auth, googleProvider);
+          }
+        } else if (error?.code === 'auth/operation-not-supported-in-this-environment') {
           signInWithRedirect(auth, googleProvider);
         } else {
-          console.error('Erro no login com Google:', error);
+          alert('Erro ao realizar o login com Google: ' + (error?.message || 'Erro desconhecido.'));
         }
       });
   };
@@ -65,6 +86,8 @@ export function useAuth() {
     loading,
     hasAccess,
     loginWithGoogle,
-    logout
+    logout,
+    isIOS,
+    isInAppBrowser
   };
 }

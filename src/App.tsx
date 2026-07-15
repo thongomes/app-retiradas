@@ -30,7 +30,7 @@ const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || 'enito@newlife.com.br
   .map((e: string) => e.trim().toLowerCase());
 
 export default function App() {
-  const { user, loading, hasAccess, loginWithGoogle, logout } = useAuth();
+  const { user, loading, hasAccess, loginWithGoogle, logout, isIOS, isInAppBrowser } = useAuth();
   const [dataLoading, setDataLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [saving, setSaving] = useState(false);
@@ -262,6 +262,27 @@ export default function App() {
           <div className="space-y-1">
             <h3 className="text-xl font-bold text-white tracking-wide">Controle de Retiradas</h3>
           </div>
+
+          {isInAppBrowser && (
+            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl p-3.5 text-left text-xs space-y-1.5 leading-relaxed">
+              <p className="font-bold text-sm">⚠️ Navegador do WhatsApp</p>
+              <p>
+                O login com Google **não é suportado** pelo iPhone dentro do aplicativo do WhatsApp.
+              </p>
+              <p className="font-semibold text-white">
+                Para logar, por favor clique no botão de bússola 🧭 no canto inferior da tela (ou nos três pontinhos no topo) e selecione "Abrir no Safari".
+              </p>
+            </div>
+          )}
+
+          {!isInAppBrowser && isIOS && (
+            <div className="bg-[#052b36] border border-brand-border text-[#8eb0ba] rounded-xl p-3 text-left text-[11px] leading-relaxed">
+              <p className="font-semibold text-white mb-1">📱 Dica para iPhone</p>
+              <p>
+                Caso o botão abaixo não responda, verifique se o navegador exibiu um aviso solicitando permissão para abrir um pop-up e clique em "Permitir".
+              </p>
+            </div>
+          )}
 
           <button
             onClick={loginWithGoogle}
